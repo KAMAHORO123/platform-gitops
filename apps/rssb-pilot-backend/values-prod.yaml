@@ -1,6 +1,6 @@
 # rssb-pilot-backend in production.
 image:
-  tag: tree-72ba26ba4421   # changed only through a reviewed PR (CI opens it on merge to main)
+  tag: tree-42ded8b5d0ed   # changed only through a reviewed PR (CI opens it on merge to main)
 
 autoscaling:
   enabled: true
