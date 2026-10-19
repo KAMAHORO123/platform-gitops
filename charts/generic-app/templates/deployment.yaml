@@ -20,6 +20,9 @@ spec:
     metadata:
       labels:
         {{- include "app.labels" . | nindent 8 }}
+        {{- with (include "app.accessLabels" . | trim) }}
+        {{- . | nindent 8 }}
+        {{- end }}
       annotations:
         # A config change alters this hash, which rolls the pods to pick it up.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}

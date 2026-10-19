@@ -4,6 +4,8 @@ image:
 
 containerPort: 3001
 existingSecret: backend-secrets   # DATABASE_URL, JWT_SECRET (Sealed Secret per namespace)
+database:
+  access: true                    # may reach PostgreSQL through the NetworkPolicy
 
 env:
   PORT: "3001"

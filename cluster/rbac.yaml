@@ -1,0 +1,90 @@
+# Who may do what with kubectl (proposal 7.5, least privilege). Nobody gets
+# "edit": changes go through Git and Argo CD, never manual kubectl (objective 3).
+# The built-in "view" role cannot read Secrets.
+#   rssb:developers  view uat + staging     (check their work, read logs)
+#   rssb:qa          view staging
+#   rssb:platform    admin in all three environments
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developers-view
+  namespace: uat
+subjects:
+  - kind: Group
+    name: rssb:developers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developers-view
+  namespace: staging
+subjects:
+  - kind: Group
+    name: rssb:developers
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: qa-view
+  namespace: staging
+subjects:
+  - kind: Group
+    name: rssb:qa
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: view
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-admin
+  namespace: uat
+subjects:
+  - kind: Group
+    name: rssb:platform
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-admin
+  namespace: staging
+subjects:
+  - kind: Group
+    name: rssb:platform
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: platform-admin
+  namespace: production
+subjects:
+  - kind: Group
+    name: rssb:platform
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: admin
+  apiGroup: rbac.authorization.k8s.io
