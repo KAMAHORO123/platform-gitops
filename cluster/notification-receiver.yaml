@@ -1,0 +1,45 @@
+# Stand-in for RSSB's alert channel (Slack/Teams/e-mail, proposal 8.2 [CONFIRM]).
+# Argo CD notifications POST here; read them with:
+#   kubectl -n argocd logs deploy/notification-receiver
+# To use a real channel, change only the webhook URL in rssb-infra/argocd-notifications-cm-patch.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-receiver
+  namespace: argocd
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: notification-receiver }
+  template:
+    metadata:
+      labels: { app: notification-receiver }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: echo
+          image: mendhak/http-https-echo:42@sha256:a265f55c86cb3baead76fdf379dc8e9e6440ed121874e101e60b833e05bce8d4
+          env:
+            - { name: HTTP_PORT, value: "8080" }
+            - { name: LOG_IGNORE_PATH, value: /healthz }
+          ports:
+            - { name: http, containerPort: 8080 }
+          resources:
+            requests: { cpu: 5m, memory: 32Mi }
+            limits: { memory: 96Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-receiver
+  namespace: argocd
+spec:
+  selector: { app: notification-receiver }
+  ports:
+    - { name: http, port: 8080, targetPort: http }

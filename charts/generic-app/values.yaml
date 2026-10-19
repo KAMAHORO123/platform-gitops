@@ -52,6 +52,10 @@ autoscaling:
   maxReplicas: 4
   targetCPUUtilizationPercentage: 70
 
+# -- Vertical Pod Autoscaler in advice mode: recommends requests from real usage.
+verticalPodAutoscaler:
+  enabled: true
+
 # -- Keep at least this many copies running during voluntary disruptions (node drain).
 podDisruptionBudget:
   enabled: false
