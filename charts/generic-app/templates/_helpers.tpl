@@ -17,6 +17,13 @@ helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
 app.kubernetes.io/name: {{ include "app.name" . }}
 {{- end -}}
 
+{{/* Labels that grant network access (see cluster/network-policies.yaml). */}}
+{{- define "app.accessLabels" -}}
+{{- if .Values.database.access }}
+rssb.rw/database-access: "true"
+{{- end }}
+{{- end -}}
+
 {{/* Restricted pod security context (namespace enforces "restricted"). */}}
 {{- define "app.podSecurityContext" -}}
 runAsNonRoot: true

@@ -17,6 +17,12 @@ containerPort: 3000
 # -- Plain (non-secret) settings, rendered into a ConfigMap and loaded as env vars.
 env: {}
 
+# -- Pods of apps that use the external PostgreSQL get the label
+#    rssb.rw/database-access=true; the namespace NetworkPolicy only lets
+#    labelled pods reach the database.
+database:
+  access: false
+
 # -- Name of an existing Secret loaded as env vars (created by Sealed Secrets).
 existingSecret: ""
 

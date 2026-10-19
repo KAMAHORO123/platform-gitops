@@ -17,6 +17,9 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: {{ include "app.name" . }}-migrate
+        {{- with (include "app.accessLabels" . | trim) }}
+        {{- . | nindent 8 }}
+        {{- end }}
     spec:
       restartPolicy: Never
       securityContext:
