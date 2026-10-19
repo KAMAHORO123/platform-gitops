@@ -1,6 +1,6 @@
 # rssb-hello-api in uat.
 image:
-  tag: tree-33dc1591e396   # written by CI after the first build on develop
+  tag: tree-55ef3698227f   # written by CI after the first build on develop
 
 replicaCount: 1
 
