@@ -1,6 +1,6 @@
 # rssb-pilot-backend in staging.
 image:
-  tag: tree-72ba26ba4421   # written by CI on merge to qa
+  tag: tree-42ded8b5d0ed   # written by CI on merge to qa
 
 replicaCount: 1
 
