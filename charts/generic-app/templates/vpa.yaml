@@ -1,0 +1,17 @@
+{{- if .Values.verticalPodAutoscaler.enabled }}
+# Advice only (updateMode Off): read recommendations with
+#   kubectl describe vpa <name>
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "app.name" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "app.name" . }}
+  updatePolicy:
+    updateMode: "Off"
+{{- end }}
