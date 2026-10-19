@@ -1,6 +1,6 @@
 # rssb-hello-api in staging.
 image:
-  tag: pending   # written by CI after the first build on develop
+  tag: tree-38373ea8e35f   # written by CI after the first build on develop
 
 replicaCount: 1
 
