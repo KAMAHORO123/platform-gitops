@@ -41,9 +41,11 @@ spec:
               limits: { memory: 96Mi }
         grafana:
           defaultDashboardsTimezone: Africa/Kigali
+          # 256Mi was a guess and Grafana 13 was OOMKilled while starting;
+          # sized from observation instead.
           resources:
-            requests: { cpu: 50m, memory: 128Mi }
-            limits: { memory: 256Mi }
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 512Mi }
         kube-state-metrics:
           resources:
             requests: { cpu: 10m, memory: 32Mi }
