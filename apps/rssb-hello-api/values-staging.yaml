@@ -1,0 +1,8 @@
+# rssb-hello-api in staging.
+image:
+  tag: pending   # written by CI after the first build on develop
+
+replicaCount: 1
+
+ingress:
+  host: rssb-hello-api-staging.127.0.0.1.nip.io
