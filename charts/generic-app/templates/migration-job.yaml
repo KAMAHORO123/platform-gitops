@@ -29,9 +29,12 @@ spec:
               value: {{ .Values.migration.seed | quote }}
             - name: HOME
               value: /home/node
-          {{- with (include "app.envFrom" . | trim) }}
+          {{- /* Only the Secret: the app ConfigMap is created in the Sync phase,
+               AFTER this PreSync hook, so referencing it would block forever. */}}
+          {{- if .Values.existingSecret }}
           envFrom:
-            {{- . | nindent 12 }}
+            - secretRef:
+                name: {{ .Values.existingSecret }}
           {{- end }}
           resources:
             {{- toYaml .Values.migration.resources | nindent 12 }}
