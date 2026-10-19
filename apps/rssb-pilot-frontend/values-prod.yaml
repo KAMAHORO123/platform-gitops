@@ -1,0 +1,16 @@
+# rssb-pilot-frontend in production.
+image:
+  tag: tree-72ba26ba4421   # changed only through a reviewed PR (CI opens it on merge to main)
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+ingress:
+  host: prod.127.0.0.1.nip.io

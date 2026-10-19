@@ -1,0 +1,78 @@
+# PostgreSQL lives OUTSIDE the cluster (proposal 4.2). A Service without a selector
+# plus a manual EndpointSlice gives it the same DNS name in every environment:
+# apps connect to "postgres:5432"; only this file knows the real address.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: uat
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: postgres-external
+  namespace: uat
+  labels:
+    kubernetes.io/service-name: postgres
+addressType: IPv4
+ports:
+  - name: postgres
+    port: 5432
+endpoints:
+  - addresses: ["192.168.58.50"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: staging
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: postgres-external
+  namespace: staging
+  labels:
+    kubernetes.io/service-name: postgres
+addressType: IPv4
+ports:
+  - name: postgres
+    port: 5432
+endpoints:
+  - addresses: ["192.168.58.50"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: production
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: postgres-external
+  namespace: production
+  labels:
+    kubernetes.io/service-name: postgres
+addressType: IPv4
+ports:
+  - name: postgres
+    port: 5432
+endpoints:
+  - addresses: ["192.168.58.50"]

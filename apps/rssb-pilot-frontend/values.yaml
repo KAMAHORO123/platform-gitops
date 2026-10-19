@@ -1,0 +1,18 @@
+# rssb-pilot-frontend (Next.js): settings shared by every environment.
+image:
+  repository: ghcr.io/kamahoro123/rssb-pilot-app/frontend
+
+containerPort: 3000
+
+readinessProbe:
+  httpGet: { path: /login, port: http }
+  periodSeconds: 5
+
+writableDirs:
+  - /tmp
+  - /app/.next/cache
+
+ingress:
+  enabled: true
+  path: /
+  pathType: Prefix

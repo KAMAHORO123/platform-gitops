@@ -1,0 +1,14 @@
+# rssb-pilot-backend in staging.
+image:
+  tag: tree-72ba26ba4421   # written by CI on merge to qa
+
+replicaCount: 1
+
+ingress:
+  host: staging.127.0.0.1.nip.io
+
+env:
+  ALLOWED_ORIGINS: http://staging.127.0.0.1.nip.io:8081
+
+migration:
+  seed: true    # demo users for testing

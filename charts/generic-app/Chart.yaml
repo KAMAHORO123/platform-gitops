@@ -1,0 +1,5 @@
+apiVersion: v2
+name: generic-app
+description: One reusable chart for every RSSB NestJS / Next.js application (proposal 5.3, 7.3)
+type: application
+version: 0.1.0

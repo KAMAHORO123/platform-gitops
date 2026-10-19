@@ -1,0 +1,8 @@
+# rssb-pilot-frontend in uat.
+image:
+  tag: tree-72ba26ba4421   # written by CI on merge to develop
+
+replicaCount: 1
+
+ingress:
+  host: uat.127.0.0.1.nip.io

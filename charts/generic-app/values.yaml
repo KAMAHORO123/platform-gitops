@@ -1,0 +1,79 @@
+# Defaults for every application. Each app overrides what it needs in
+# apps/<app>/values.yaml (shared by all environments) and
+# apps/<app>/values-<env>.yaml (one environment).
+
+# -- Container image. `tag` is the ONLY line CI normally edits.
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# -- Fixed replica count, used when autoscaling is disabled.
+replicaCount: 1
+
+# -- Port the application listens on inside the container.
+containerPort: 3000
+
+# -- Plain (non-secret) settings, rendered into a ConfigMap and loaded as env vars.
+env: {}
+
+# -- Name of an existing Secret loaded as env vars (created by Sealed Secrets).
+existingSecret: ""
+
+# -- CPU/RAM reserved (requests) and the ceiling (limits). No CPU limit on purpose:
+#    CPU is shared fairly by requests; a CPU limit only adds throttling.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+# -- Kubernetes probe specs (port "http" refers to containerPort). Left empty
+#    here on purpose: Helm MERGES maps across values files, so a default
+#    tcpSocket probe plus an app's httpGet probe would become one invalid probe
+#    with two handlers. When empty, the template falls back to a TCP check.
+startupProbe: {}
+livenessProbe: {}
+readinessProbe: {}
+
+# -- Directories the app may write to; everything else is read-only.
+writableDirs:
+  - /tmp
+
+# -- Seconds to keep serving after removal from the Service, so the ingress
+#    stops routing here before the process exits (no failed requests).
+preStopSleepSeconds: 5
+
+# -- Horizontal Pod Autoscaler: add/remove copies based on CPU use.
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+# -- Keep at least this many copies running during voluntary disruptions (node drain).
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+ingress:
+  enabled: false
+  className: nginx
+  host: ""
+  path: /
+  pathType: Prefix
+  annotations: {}
+
+# -- Database migration Job, run by Argo CD before every sync (PreSync hook).
+migration:
+  enabled: false
+  image:
+    repository: ""   # tag always equals image.tag, so app and schema stay in step
+  seed: false        # load demo data (UAT/staging only, never production)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 768Mi

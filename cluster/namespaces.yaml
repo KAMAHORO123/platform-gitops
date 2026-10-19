@@ -1,0 +1,26 @@
+# One namespace per environment (proposal section 4.1). Labels let later
+# tooling (network policies, Argo CD, quotas) select environments.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: uat
+  labels:
+    rssb.rw/environment: uat
+    # Pod Security Admission: reject pods that run as root, privileged, etc.
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    rssb.rw/environment: staging
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    rssb.rw/environment: production
+    pod-security.kubernetes.io/enforce: restricted
