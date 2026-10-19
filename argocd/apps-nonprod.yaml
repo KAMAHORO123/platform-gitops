@@ -1,0 +1,45 @@
+# One Application per app folder x {uat, staging}, synced automatically.
+# Adding an app = adding a folder under apps/ (proposal 8.3).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-nonprod
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          - git:
+              repoURL: https://github.com/KAMAHORO123/rssb-config.git
+              revision: main
+              directories:
+                - path: apps/*
+          - list:
+              elements:
+                - { env: uat, namespace: uat }
+                - { env: staging, namespace: staging }
+  template:
+    metadata:
+      name: '{{.path.basename}}-{{.env}}'
+      labels:
+        rssb.rw/environment: '{{.env}}'
+    spec:
+      project: rssb
+      source:
+        repoURL: https://github.com/KAMAHORO123/rssb-config.git
+        targetRevision: main
+        path: charts/generic-app
+        helm:
+          releaseName: '{{.path.basename}}'
+          valueFiles:
+            - '../../{{.path.path}}/values.yaml'
+            - '../../{{.path.path}}/values-{{.env}}.yaml'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+      syncPolicy:
+        automated:      # UAT/staging follow Git automatically (proposal 8.4)
+          prune: true
+          selfHeal: true
