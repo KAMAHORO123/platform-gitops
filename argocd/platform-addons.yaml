@@ -41,6 +41,13 @@ spec:
               limits: { memory: 96Mi }
         grafana:
           defaultDashboardsTimezone: Africa/Kigali
+          # Never let the chart generate the password: Helm's randAlphaNum runs
+          # on every Argo CD render, changing the Secret each time (permanent
+          # OutOfSync, and a password that no longer matches Grafana's).
+          admin:
+            existingSecret: grafana-admin          # sealed-secrets/grafana-admin-monitoring.yaml
+            userKey: admin-user
+            passwordKey: admin-password
           # 256Mi was a guess and Grafana 13 was OOMKilled while starting;
           # sized from observation instead.
           resources:
