@@ -8,7 +8,10 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    # promote/** too: promotion PRs are opened with GITHUB_TOKEN, which never
+    # triggers pull_request workflows. Required checks belong to the commit, so
+    # validating the pushed branch commit satisfies the PR.
+    branches: [main, "promote/**"]
 
 permissions:
   contents: read
