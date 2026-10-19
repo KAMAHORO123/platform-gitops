@@ -54,10 +54,9 @@ spec:
             requests: { cpu: 50m, memory: 256Mi }
             limits: { memory: 512Mi }
           # Grafana 13 starts slowly on a busy laptop: give it time before the
-          # liveness probe judges it, and never run old + new pods together
-          # (two crash-looping Grafanas used ~1 CPU between them).
-          deploymentStrategy:
-            type: Recreate
+          # liveness probe judges it. (A Recreate strategy was tried and dropped:
+          # server-side apply merged it with the live rollingUpdate defaults,
+          # which Kubernetes rejects.)
           livenessProbe:
             httpGet: { path: /api/health, port: 3000 }
             initialDelaySeconds: 300
