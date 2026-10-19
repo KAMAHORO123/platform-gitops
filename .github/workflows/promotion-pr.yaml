@@ -1,0 +1,35 @@
+# The app pipeline never changes production directly. On a merge to main it
+# pushes a branch promote/production/<tag>; this workflow turns that branch
+# into a pull request that a person must review and merge (proposal 8.5).
+# After the merge, Argo CD shows production OutOfSync until someone presses Sync.
+
+name: Open production promotion PR
+
+on:
+  push:
+    branches: ["promote/**"]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Open the PR (once per branch)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          open=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --state open --json number --jq length)
+          if [ "$open" = 0 ]; then
+            tag=${BRANCH##*/}
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$BRANCH" \
+              --title "Promote $tag to production" \
+              --body "Sets \`image.tag: $tag\` in \`apps/*/values-prod.yaml\`.
+
+          This image was built and tested on develop (UAT) and qa (staging).
+
+          After merging: open Argo CD, review the diff of the \`*-prod\` applications, then press **Sync**."
+          fi

@@ -1,0 +1,3 @@
+# Every change needs a platform reviewer; production values most of all.
+*                        @KAMAHORO123
+/apps/*/values-prod.yaml @KAMAHORO123

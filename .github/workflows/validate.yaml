@@ -1,0 +1,49 @@
+# Every change to the config repo: render every app x environment and check
+# the result against the Kubernetes schemas. A broken values file or template
+# cannot reach main, so Argo CD never receives something it cannot apply.
+
+name: Validate config
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  HELM_VERSION: v4.2.3
+  KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:v0.8.0-alpine@sha256:6b90a5f23d846140ce0194fe050b1995e546eba938f3a6bf10c039dd5e24588f
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+      - name: Lint and render every app x environment
+        run: |
+          mkdir -p rendered
+          for app in apps/*/; do
+            app=${app%/}; name=$(basename "$app")
+            for f in "$app"/values-*.yaml; do
+              env=$(basename "$f" .yaml); env=${env#values-}
+              ns=$env; [ "$env" = prod ] && ns=production
+              echo "::group::$name / $env"
+              helm lint --strict charts/generic-app -f "$app/values.yaml" -f "$f"
+              helm template "$name" charts/generic-app -n "$ns" \
+                -f "$app/values.yaml" -f "$f" > "rendered/$name-$env.yaml"
+              echo "::endgroup::"
+            done
+          done
+      - name: Check against Kubernetes and CRD schemas (kubeconform)
+        run: |
+          docker run --rm -v "$PWD:/w" -w /w "$KUBECONFORM_IMAGE" \
+            -strict -summary \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            rendered cluster sealed-secrets argocd
