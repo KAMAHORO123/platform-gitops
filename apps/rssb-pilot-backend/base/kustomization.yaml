@@ -1,0 +1,22 @@
+# rssb-pilot-backend (NestJS API): what every environment shares.
+# Environments (envs/*) change only what differs: image digest, hostname,
+# replica policy, seed data, secrets.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - migrate-job.yaml
+  - vpa.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: rssb-pilot
+    includeSelectors: false
+# Hashed ConfigMap: any config change renames it, which rolls the pods.
+configMapGenerator:
+  - name: rssb-pilot-backend-config
+    literals:
+      - PORT=3001
+      - JWT_ISSUER=smart-logistics
+      - JWT_AUDIENCE=smart-logistics-web

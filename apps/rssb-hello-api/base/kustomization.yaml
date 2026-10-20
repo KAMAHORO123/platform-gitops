@@ -1,0 +1,12 @@
+# rssb-hello-api (NestJS service): what every environment shares.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - vpa.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: rssb-hello-api
+    includeSelectors: false

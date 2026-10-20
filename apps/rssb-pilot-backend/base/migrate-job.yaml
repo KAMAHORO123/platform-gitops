@@ -1,0 +1,54 @@
+# Database migrations, before the new version starts (plan 6.4):
+#   wave -2 secrets  ->  wave -1 this Job  ->  wave 0 the app
+# Argo CD waits for the Job to succeed before starting wave 0; if it fails,
+# the sync stops and the old version keeps serving.
+# Force+Replace: a Job's pod template is immutable, so when the image digest
+# changes Argo CD deletes and recreates it (plan G5) and migrations run again.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rssb-pilot-backend-migrate
+  labels:
+    app.kubernetes.io/name: rssb-pilot-backend-migrate
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 900
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rssb-pilot-backend-migrate
+        rssb.rw/database-access: "true"
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: ghcr.io/kamahoro123/rssb-pilot-app/backend-migrator   # digest set per environment
+          env:
+            - name: RUN_SEED
+              value: "false"          # demo data: switched on per environment (never prod)
+            - name: HOME
+              value: /home/node
+          envFrom:
+            - secretRef:
+                name: backend-secrets
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { memory: 768Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: home, mountPath: /home/node }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+        - { name: home, emptyDir: {} }

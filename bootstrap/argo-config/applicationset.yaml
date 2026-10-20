@@ -1,0 +1,46 @@
+# One Argo CD Application per folder apps/<app>/envs/<env> (plan 5.4, D12).
+# Adding an app = adding its folder. Names: <app>-<env>, e.g. rssb-pilot-backend-uat.
+#   uat, staging : sync automatically, prune and self-heal (plan 8.4)
+#   prod         : manual sync - a person reviews the diff and presses SYNC
+# Every sync retries with backoff (plan G7: without it one failed sync stalls).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/KAMAHORO123/platform-gitops.git
+        revision: main
+        directories:
+          - path: apps/*/envs/*
+  template:
+    metadata:
+      name: '{{ index .path.segments 1 }}-{{ .path.basename }}'
+      labels:
+        rssb.rw/app: '{{ index .path.segments 1 }}'
+        rssb.rw/environment: '{{ .path.basename }}'
+    spec:
+      project: rssb
+      source:
+        repoURL: https://github.com/KAMAHORO123/platform-gitops.git
+        targetRevision: main
+        path: '{{ .path.path }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ if eq .path.basename "prod" }}production{{ else }}{{ .path.basename }}{{ end }}'
+      syncPolicy:
+        retry:
+          limit: 5
+          backoff: { duration: 15s, factor: 2, maxDuration: 3m }
+  templatePatch: |
+    {{- if ne .path.basename "prod" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+    {{- end }}

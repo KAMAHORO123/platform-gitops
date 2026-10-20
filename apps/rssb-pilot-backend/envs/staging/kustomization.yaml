@@ -1,0 +1,32 @@
+# rssb-pilot-backend in staging.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: staging
+resources:
+  - ../../base
+  - backend-secrets.sealed.yaml
+
+# The ONLY lines CI changes: which exact image bytes run here.
+images:
+  - name: ghcr.io/kamahoro123/rssb-pilot-app/backend
+    digest: sha256:d55f70afcce53a9c5270bc865540b7955cd3140fb02203921304c564d98d8e06
+  - name: ghcr.io/kamahoro123/rssb-pilot-app/backend-migrator
+    digest: sha256:acca63446d98ffb454d033a30b92317a1bd6ce7bcb51b9e750ae2fe40f711462
+
+configMapGenerator:
+  - name: rssb-pilot-backend-config
+    behavior: merge
+    literals:
+      - ALLOWED_ORIGINS=http://staging.127.0.0.1.nip.io:8081
+
+patches:
+  - target: { kind: Ingress, name: rssb-pilot-backend }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: staging.127.0.0.1.nip.io
+  - target: { kind: Job, name: rssb-pilot-backend-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/value
+        value: "true"

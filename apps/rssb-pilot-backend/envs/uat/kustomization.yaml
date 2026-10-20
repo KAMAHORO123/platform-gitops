@@ -1,0 +1,32 @@
+# rssb-pilot-backend in uat.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: uat
+resources:
+  - ../../base
+  - backend-secrets.sealed.yaml
+
+# The ONLY lines CI changes: which exact image bytes run here.
+images:
+  - name: ghcr.io/kamahoro123/rssb-pilot-app/backend
+    digest: sha256:2f698463ab943c4826cd14d9d12a74af3c128aacd8c072289846030eb2dafd11
+  - name: ghcr.io/kamahoro123/rssb-pilot-app/backend-migrator
+    digest: sha256:948e94a8bc2025e464839d946fda6337ec0c105362a1e8c3bc21719f2ba5a905
+
+configMapGenerator:
+  - name: rssb-pilot-backend-config
+    behavior: merge
+    literals:
+      - ALLOWED_ORIGINS=http://uat.127.0.0.1.nip.io:8081
+
+patches:
+  - target: { kind: Ingress, name: rssb-pilot-backend }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: uat.127.0.0.1.nip.io
+  - target: { kind: Job, name: rssb-pilot-backend-migrate }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/env/0/value
+        value: "true"

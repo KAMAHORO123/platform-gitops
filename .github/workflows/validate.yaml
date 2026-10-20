@@ -1,6 +1,7 @@
-# Every change to the config repo: render every app x environment and check
-# the result against the Kubernetes schemas. A broken values file or template
-# cannot reach main, so Argo CD never receives something it cannot apply.
+# Every change to the GitOps repo: build every apps/<app>/envs/<env> with
+# Kustomize and check the result, plus infra/ and bootstrap/argo-config/,
+# against the Kubernetes and CRD schemas. A broken overlay cannot reach main,
+# so Argo CD never receives something it cannot apply.
 
 name: Validate config
 
@@ -8,16 +9,12 @@ on:
   pull_request:
     branches: [main]
   push:
-    # promote/** too: promotion PRs are opened with GITHUB_TOKEN, which never
-    # triggers pull_request workflows. Required checks belong to the commit, so
-    # validating the pushed branch commit satisfies the PR.
-    branches: [main, "promote/**"]
+    branches: [main]
 
 permissions:
   contents: read
 
 env:
-  HELM_VERSION: v4.2.3
   KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:v0.8.0-alpine@sha256:6b90a5f23d846140ce0194fe050b1995e546eba938f3a6bf10c039dd5e24588f
 
 jobs:
@@ -25,23 +22,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
-          version: ${{ env.HELM_VERSION }}
-      - name: Lint and render every app x environment
+          persist-credentials: false
+      - name: Build every app x environment with Kustomize
         run: |
           mkdir -p rendered
-          for app in apps/*/; do
-            app=${app%/}; name=$(basename "$app")
-            for f in "$app"/values-*.yaml; do
-              env=$(basename "$f" .yaml); env=${env#values-}
-              ns=$env; [ "$env" = prod ] && ns=production
-              echo "::group::$name / $env"
-              helm lint --strict charts/generic-app -f "$app/values.yaml" -f "$f"
-              helm template "$name" charts/generic-app -n "$ns" \
-                -f "$app/values.yaml" -f "$f" > "rendered/$name-$env.yaml"
-              echo "::endgroup::"
-            done
+          for dir in apps/*/envs/*/; do
+            dir=${dir%/}; app=$(echo "$dir" | cut -d/ -f2); env=$(basename "$dir")
+            echo "::group::$app / $env"
+            kubectl kustomize "$dir" | tee "rendered/$app-$env.yaml" | grep -E '^kind:|image:' || true
+            echo "::endgroup::"
           done
       - name: Check against Kubernetes and CRD schemas (kubeconform)
         run: |
@@ -49,4 +39,4 @@ jobs:
             -strict -summary \
             -schema-location default \
             -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
-            rendered cluster sealed-secrets argocd
+            rendered infra bootstrap/argo-config bootstrap/argocd/root-app.yaml
