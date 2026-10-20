@@ -8,7 +8,7 @@ resources:
 # The ONLY lines CI changes: which exact image bytes run here.
 images:
   - name: ghcr.io/kamahoro123/rssb-hello-api
-    digest: sha256:53de3e4e2a98885d28026ec74a7ce6a18684d64064fc16251bb435fdedb69d8a
+    digest: sha256:ade540e0a1f406efc03f590d825e4772109360ebb16f821f7b9f543edf182402
 
 patches:
   - target: { kind: Ingress, name: rssb-hello-api }
