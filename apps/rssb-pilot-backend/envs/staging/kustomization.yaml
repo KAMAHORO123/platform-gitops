@@ -9,9 +9,9 @@ resources:
 # The ONLY lines CI changes: which exact image bytes run here.
 images:
   - name: ghcr.io/kamahoro123/rssb-pilot-app/backend
-    digest: sha256:d55f70afcce53a9c5270bc865540b7955cd3140fb02203921304c564d98d8e06
+    digest: sha256:d5d3cca681184d6d4966307ae0cd619523c4e717cf17544163d3c78fa083545d
   - name: ghcr.io/kamahoro123/rssb-pilot-app/backend-migrator
-    digest: sha256:acca63446d98ffb454d033a30b92317a1bd6ce7bcb51b9e750ae2fe40f711462
+    digest: sha256:d2f173ae27188206da5fb9386721b69e1ee4e10c34472635a5cc9e92939cc12c
 
 configMapGenerator:
   - name: rssb-pilot-backend-config
