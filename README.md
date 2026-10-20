@@ -36,3 +36,11 @@ UAT and staging sync automatically; production waits for a person to press **SYN
 kubectl kustomize apps/rssb-pilot-backend/envs/prod     # see exactly what production runs
 git revert <commit that changed a digest>                # rollback (through a PR)
 ```
+
+## Instant sync (GitHub webhook)
+
+Argo CD polls Git every ~3 minutes. A GitHub webhook on this repo (push events,
+signed with `webhook.github.secret`) makes it refresh immediately. GitHub cannot
+reach the lab's Argo CD, so `infra-automation/webhook-relay.sh` relays the
+webhook through smee.io to `https://localhost:8443/api/webhook`. In RSSB: an
+internal relay or a firewall path to Argo CD (plan story 3.7).
