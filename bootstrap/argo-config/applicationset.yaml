@@ -9,6 +9,10 @@ metadata:
   name: apps
   namespace: argocd
 spec:
+  # Deleting or replacing this ApplicationSet must never cascade-delete the
+  # running apps in every environment (it would, by default).
+  syncPolicy:
+    preserveResourcesOnDeletion: true
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
