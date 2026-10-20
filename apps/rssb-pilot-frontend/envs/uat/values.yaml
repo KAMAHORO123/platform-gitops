@@ -3,7 +3,7 @@
 # The ONLY lines CI changes: which exact image bytes run here.
 images:
   - name: ghcr.io/kamahoro123/rssb-pilot-app/frontend
-    digest: sha256:8908d048c53dc19d0f541902582397c041f7eb15c08788f338c6ab650b4244ce
+    digest: sha256:b2781c5a5009184697f03ae1179d4448ad02ab2f3c6ad61a5d92abb7934418fe
 
 ingress:
   host: uat.127.0.0.1.nip.io
