@@ -1,0 +1,18 @@
+# rssb-pilot-frontend in uat.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: uat
+resources:
+  - ../../base
+
+# The ONLY lines CI changes: which exact image bytes run here.
+images:
+  - name: ghcr.io/kamahoro123/rssb-pilot-app/frontend
+    digest: sha256:464e04b222fef90604b42ce1c1e6e6e9fdd1df88b0ac3dd1c7cbbccba170cb1f
+
+patches:
+  - target: { kind: Ingress, name: rssb-pilot-frontend }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: uat.127.0.0.1.nip.io

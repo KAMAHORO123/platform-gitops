@@ -1,0 +1,22 @@
+# Browser calls /api/* on the environment's hostname; the prefix is stripped.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rssb-pilot-backend
+  labels:
+    app.kubernetes.io/name: rssb-pilot-backend
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: HOST_SET_PER_ENVIRONMENT
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: rssb-pilot-backend
+                port: { name: http }

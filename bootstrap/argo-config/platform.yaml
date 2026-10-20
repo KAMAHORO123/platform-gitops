@@ -1,0 +1,26 @@
+# Platform-owned objects (infra/): namespaces, external services, security
+# policies, alert receiver, monitoring secrets. Synced before the apps.
+# prune is off on purpose: deleting a file must never auto-delete a namespace
+# (and with it a whole environment).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/KAMAHORO123/platform-gitops.git
+    targetRevision: main
+    path: infra
+    directory:
+      recurse: true
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 3m }

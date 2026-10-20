@@ -1,0 +1,17 @@
+# A fence around all RSSB applications: they may only come from the config repo,
+# may only deploy into the three environment namespaces, and may not create
+# cluster-wide objects (only the platform apps in project "default" can).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: rssb
+  namespace: argocd
+spec:
+  description: RSSB applications (uat, staging, production)
+  sourceRepos:
+    - https://github.com/KAMAHORO123/platform-gitops.git
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: uat }
+    - { server: https://kubernetes.default.svc, namespace: staging }
+    - { server: https://kubernetes.default.svc, namespace: production }
+  clusterResourceWhitelist: []

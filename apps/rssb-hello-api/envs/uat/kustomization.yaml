@@ -1,0 +1,18 @@
+# rssb-hello-api in uat.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: uat
+resources:
+  - ../../base
+
+# The ONLY lines CI changes: which exact image bytes run here.
+images:
+  - name: ghcr.io/kamahoro123/rssb-hello-api
+    digest: sha256:53de3e4e2a98885d28026ec74a7ce6a18684d64064fc16251bb435fdedb69d8a
+
+patches:
+  - target: { kind: Ingress, name: rssb-hello-api }
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: rssb-hello-api-uat.127.0.0.1.nip.io

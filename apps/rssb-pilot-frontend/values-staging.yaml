@@ -1,8 +1,0 @@
-# rssb-pilot-frontend in staging.
-image:
-  tag: tree-42ded8b5d0ed   # written by CI on merge to qa
-
-replicaCount: 1
-
-ingress:
-  host: staging.127.0.0.1.nip.io

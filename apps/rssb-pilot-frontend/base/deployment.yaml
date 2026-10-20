@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rssb-pilot-frontend
+  labels:
+    app.kubernetes.io/name: rssb-pilot-frontend
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rssb-pilot-frontend   # never change: selectors are immutable
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rssb-pilot-frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: rssb-pilot-frontend
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: app
+          image: ghcr.io/kamahoro123/rssb-pilot-app/frontend   # digest set per environment
+          ports:
+            - name: http
+              containerPort: 3000
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 256Mi }
+          livenessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: { path: /login, port: http }
+            periodSeconds: 5
+          lifecycle:
+            preStop:
+              sleep: { seconds: 5 }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: writable-0, mountPath: /tmp }
+            - { name: writable-1, mountPath: /app/.next/cache }
+      volumes:
+        - { name: writable-0, emptyDir: {} }
+        - { name: writable-1, emptyDir: {} }
