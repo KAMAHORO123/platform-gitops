@@ -1,0 +1,18 @@
+# rssb-hello-api (NestJS service): what every environment shares.
+# Rendered by the shared chart charts/rssb-app (its values.yaml lists every option).
+partOf: rssb-hello-api
+
+image:
+  repository: ghcr.io/kamahoro123/rssb-hello-api
+
+containerPort: 3000
+
+livenessProbe:
+  httpGet: { path: /health, port: http }
+  periodSeconds: 10
+readinessProbe:
+  httpGet: { path: /health, port: http }
+  periodSeconds: 5
+
+ingress:
+  enabled: true

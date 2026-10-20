@@ -1,0 +1,22 @@
+# rssb-pilot-frontend (Next.js frontend): what every environment shares.
+# Rendered by the shared chart charts/rssb-app (its values.yaml lists every option).
+partOf: rssb-pilot
+
+image:
+  repository: ghcr.io/kamahoro123/rssb-pilot-app/frontend
+
+containerPort: 3000
+
+livenessProbe:
+  tcpSocket: { port: http }
+  periodSeconds: 10
+readinessProbe:
+  httpGet: { path: /login, port: http }
+  periodSeconds: 5
+
+writableDirs:
+  - /tmp
+  - /app/.next/cache
+
+ingress:
+  enabled: true
