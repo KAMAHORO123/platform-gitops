@@ -1,0 +1,106 @@
+# Defaults for every application. Argo CD layers two more files on top:
+#   apps/<app>/values.yaml              what all environments of the app share
+#   apps/<app>/envs/<env>/values.yaml   what one environment changes
+# Later files win. Maps are merged key by key; lists are replaced whole.
+
+# -- Group label (app.kubernetes.io/part-of), e.g. the product the app belongs to.
+partOf: ""
+
+image:
+  repository: ""        # the digest comes from `images` below
+
+# -- The ONLY lines CI changes (in envs/<env>/values.yaml): which exact image
+#    bytes run in this environment. Same shape as before, one entry per image.
+images: []
+#  - name: ghcr.io/kamahoro123/rssb-pilot-app/backend
+#    digest: sha256:...
+
+# -- Fixed number of copies, used when autoscaling is disabled.
+replicaCount: 1
+
+# -- Port the application listens on inside the container.
+containerPort: 3000
+
+# -- Plain (non-secret) settings: rendered into ConfigMap <app>-config and
+#    loaded as environment variables. A change rolls the pods (checksum annotation).
+config: {}
+
+# -- Name of a Secret loaded as environment variables (see sealedSecrets).
+existingSecret: ""
+
+# -- Encrypted secrets (Sealed Secrets), one entry per Secret name. Only the
+#    cluster can decrypt them, so they are safe in Git. Produce the values with:
+#    kubeseal --cert bootstrap/sealed-secrets/sealing-cert.pem -n <namespace> -o yaml
+#    and copy spec.encryptedData. Example:
+#    sealedSecrets:
+#      backend-secrets:
+#        DATABASE_URL: AgA...
+sealedSecrets: {}
+
+# -- Extra labels on the app pods (e.g. permission to reach the database).
+podLabels: {}
+
+# -- CPU/RAM reserved (requests) and the ceiling (limits). No CPU limit on purpose:
+#    CPU is shared fairly by requests; a CPU limit only adds throttling.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+
+# -- Probe specs (port "http" = containerPort). Empty by default on purpose:
+#    Helm MERGES maps, so a default tcpSocket probe plus an app's httpGet probe
+#    would become one invalid probe with two handlers. Empty = no such probe.
+startupProbe: {}
+livenessProbe: {}
+readinessProbe: {}
+
+# -- Directories the app may write to; everything else is read-only.
+writableDirs:
+  - /tmp
+
+# -- Seconds to keep serving after removal from the Service, so the ingress
+#    stops routing here before the process exits (no failed requests).
+preStopSleepSeconds: 5
+terminationGracePeriodSeconds: 30
+
+# -- Horizontal Pod Autoscaler: add/remove copies based on CPU use. When on,
+#    the Deployment has no replica count (Git must not fight the HPA).
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+# -- Keep at least this many copies during voluntary disruptions (node drain).
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# -- Vertical Pod Autoscaler in advice-only mode: kubectl describe vpa <app>
+vpa:
+  enabled: true
+
+ingress:
+  enabled: false
+  className: nginx
+  host: ""
+  path: /
+  pathType: Prefix
+  annotations: {}
+
+# -- Database migration Job (plan 6.4): wave -1, after the secrets (wave -2)
+#    and before the app (wave 0). If it fails, the sync stops and the old
+#    version keeps serving.
+migration:
+  enabled: false
+  image:
+    repository: ""     # its digest also comes from `images`
+  seed: false          # load demo data (UAT/staging only, never production)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 768Mi

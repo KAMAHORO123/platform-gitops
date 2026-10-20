@@ -1,3 +1,4 @@
+{{- if .Values.migration.enabled }}
 # Database migrations, before the new version starts (plan 6.4):
 #   wave -2 secrets  ->  wave -1 this Job  ->  wave 0 the app
 # Argo CD waits for the Job to succeed before starting wave 0; if it fails,
@@ -7,9 +8,14 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rssb-pilot-backend-migrate
+  name: {{ include "app.name" . }}-migrate
   labels:
-    app.kubernetes.io/name: rssb-pilot-backend-migrate
+    app.kubernetes.io/name: {{ include "app.name" . }}-migrate
+    {{- with .Values.partOf }}
+    app.kubernetes.io/part-of: {{ . }}
+    {{- end }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
     argocd.argoproj.io/sync-options: Force=true,Replace=true
@@ -19,36 +25,36 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: rssb-pilot-backend-migrate
-        rssb.rw/database-access: "true"
+        app.kubernetes.io/name: {{ include "app.name" . }}-migrate
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       restartPolicy: Never
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        seccompProfile: { type: RuntimeDefault }
+        {{- include "app.podSecurityContext" . | nindent 8 }}
       containers:
         - name: migrate
-          image: ghcr.io/kamahoro123/rssb-pilot-app/backend-migrator   # digest set per environment
+          image: {{ include "app.image" (list . .Values.migration.image.repository) }}
           env:
             - name: RUN_SEED
-              value: "false"          # demo data: switched on per environment (never prod)
+              value: {{ .Values.migration.seed | quote }}
             - name: HOME
               value: /home/node
+          {{- /* Only the Secret: migrations need nothing from the app config. */}}
+          {{- with .Values.existingSecret }}
           envFrom:
             - secretRef:
-                name: backend-secrets
+                name: {{ . }}
+          {{- end }}
           resources:
-            requests: { cpu: 100m, memory: 256Mi }
-            limits: { memory: 768Mi }
+            {{- toYaml .Values.migration.resources | nindent 12 }}
           securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities: { drop: ["ALL"] }
+            {{- include "app.containerSecurityContext" . | nindent 12 }}
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
             - { name: home, mountPath: /home/node }
       volumes:
         - { name: tmp, emptyDir: {} }
         - { name: home, emptyDir: {} }
+{{- end }}

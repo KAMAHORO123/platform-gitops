@@ -1,5 +1,9 @@
 # One Argo CD Application per folder apps/<app>/envs/<env> (plan 5.4, D12).
 # Adding an app = adding its folder. Names: <app>-<env>, e.g. rssb-pilot-backend-uat.
+# Every app is rendered by the shared Helm chart charts/rssb-app with two
+# values files on top of the chart defaults (later files win):
+#   apps/<app>/values.yaml              shared by all environments of the app
+#   apps/<app>/envs/<env>/values.yaml   this environment (digests, host, ...)
 #   uat, staging : sync automatically, prune and self-heal (plan 8.4)
 #   prod         : manual sync - a person reviews the diff and presses SYNC
 # Every sync retries with backoff (plan G7: without it one failed sync stalls).
@@ -32,7 +36,12 @@ spec:
       source:
         repoURL: https://github.com/KAMAHORO123/platform-gitops.git
         targetRevision: main
-        path: '{{ .path.path }}'
+        path: charts/rssb-app
+        helm:
+          releaseName: '{{ index .path.segments 1 }}'   # = object names
+          valueFiles:
+            - '../../apps/{{ index .path.segments 1 }}/values.yaml'
+            - '../../{{ .path.path }}/values.yaml'
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ if eq .path.basename "prod" }}production{{ else }}{{ .path.basename }}{{ end }}'

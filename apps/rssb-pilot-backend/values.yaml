@@ -1,0 +1,49 @@
+# rssb-pilot-backend (NestJS API): what every environment shares.
+# Rendered by the shared chart charts/rssb-app (its values.yaml lists every option).
+# Environments (envs/<env>/values.yaml) change only what differs: image digests,
+# hostname, replica policy, seed data, secrets.
+partOf: rssb-pilot
+
+image:
+  repository: ghcr.io/kamahoro123/rssb-pilot-app/backend
+
+containerPort: 3001
+
+config:
+  PORT: "3001"
+  JWT_ISSUER: smart-logistics
+  JWT_AUDIENCE: smart-logistics-web
+
+existingSecret: backend-secrets      # sealed, per environment
+
+podLabels:
+  rssb.rw/database-access: "true"    # NetworkPolicy lets only these pods reach PostgreSQL
+
+resources:
+  requests: { cpu: 100m, memory: 192Mi }
+  limits: { memory: 384Mi }
+
+startupProbe:
+  httpGet: { path: /health, port: http }
+  periodSeconds: 3
+  failureThreshold: 40
+livenessProbe:                       # stuck process -> restart it
+  httpGet: { path: /health, port: http }
+  periodSeconds: 10
+readinessProbe:                      # database unreachable -> stop sending traffic here
+  httpGet: { path: /health/readiness, port: http }
+  periodSeconds: 5
+
+# Browser calls /api/* on the environment's hostname; the prefix is stripped.
+ingress:
+  enabled: true
+  path: /api(/|$)(.*)
+  pathType: ImplementationSpecific
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+migration:
+  enabled: true
+  image:
+    repository: ghcr.io/kamahoro123/rssb-pilot-app/backend-migrator

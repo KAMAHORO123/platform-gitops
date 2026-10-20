@@ -1,6 +1,7 @@
-# Every change to the GitOps repo: build every apps/<app>/envs/<env> with
-# Kustomize and check the result, plus infra/ and bootstrap/argo-config/,
-# against the Kubernetes and CRD schemas. A broken overlay cannot reach main,
+# Every change to the GitOps repo: render every apps/<app>/envs/<env> with the
+# shared Helm chart exactly as Argo CD does (same Helm version, same values
+# files), then check the result, plus infra/ and bootstrap/, against the
+# Kubernetes and CRD schemas. A broken chart or values file cannot reach main,
 # so Argo CD never receives something it cannot apply.
 
 name: Validate config
@@ -15,6 +16,7 @@ permissions:
   contents: read
 
 env:
+  HELM_IMAGE: alpine/helm:4.2.1@sha256:8647f126de3578d74f947ba735e4cfa0ea6aea7d6e2f36bceb86f31415944dca   # = Argo CD's Helm
   KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:v0.8.0-alpine@sha256:6b90a5f23d846140ce0194fe050b1995e546eba938f3a6bf10c039dd5e24588f
 
 jobs:
@@ -24,13 +26,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Build every app x environment with Kustomize
+      - name: Lint the shared chart
+        run: docker run --rm -v "$PWD:/w" -w /w "$HELM_IMAGE" lint charts/rssb-app --strict -f apps/rssb-pilot-backend/values.yaml -f apps/rssb-pilot-backend/envs/uat/values.yaml
+      - name: Render every app x environment with Helm
         run: |
           mkdir -p rendered
           for dir in apps/*/envs/*/; do
             dir=${dir%/}; app=$(echo "$dir" | cut -d/ -f2); env=$(basename "$dir")
+            ns=$env; [ "$env" = prod ] && ns=production
             echo "::group::$app / $env"
-            kubectl kustomize "$dir" | tee "rendered/$app-$env.yaml" | grep -E '^kind:|image:' || true
+            docker run --rm -v "$PWD:/w" -w /w "$HELM_IMAGE" template "$app" charts/rssb-app -n "$ns" \
+                -f "apps/$app/values.yaml" -f "$dir/values.yaml" \
+              | tee "rendered/$app-$env.yaml" | grep -E '^kind:|image:'
             echo "::endgroup::"
           done
       - name: Check against Kubernetes and CRD schemas (kubeconform)

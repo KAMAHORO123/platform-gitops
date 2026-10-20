@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.name" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0   # never drop below the desired count during an update
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "app.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.config }}
+      annotations:
+        # A config change alters this hash, which rolls the pods to pick it up.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- end }}
+    spec:
+      securityContext:
+        {{- include "app.podSecurityContext" . | nindent 8 }}
+      # Spread copies across nodes so one node failure is survivable.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "app.selectorLabels" . | nindent 14 }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: app
+          image: {{ include "app.image" (list . .Values.image.repository) }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+          {{- if or .Values.config .Values.existingSecret }}
+          envFrom:
+            {{- if .Values.config }}
+            - configMapRef:
+                name: {{ include "app.name" . }}-config
+            {{- end }}
+            {{- with .Values.existingSecret }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:          # stuck process -> restart it
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:         # not ready -> stop sending traffic here
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:              # keep serving until the ingress stops routing here
+              sleep:
+                seconds: {{ .Values.preStopSleepSeconds }}
+          securityContext:
+            {{- include "app.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            {{- range $i, $dir := .Values.writableDirs }}
+            - { name: writable-{{ $i }}, mountPath: {{ $dir }} }
+            {{- end }}
+      volumes:
+        {{- range $i, $dir := .Values.writableDirs }}
+        - { name: writable-{{ $i }}, emptyDir: {} }
+        {{- end }}
