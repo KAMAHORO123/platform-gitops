@@ -10,7 +10,7 @@ resources:
 # Not released to production yet: CI writes the digest when it is promoted.
 images:
   - name: ghcr.io/kamahoro123/rssb-hello-api
-    newTag: not-released
+    digest: sha256:ade540e0a1f406efc03f590d825e4772109360ebb16f821f7b9f543edf182402
 
 patches:
   - target: { kind: Ingress, name: rssb-hello-api }
