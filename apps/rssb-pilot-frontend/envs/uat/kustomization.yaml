@@ -8,7 +8,7 @@ resources:
 # The ONLY lines CI changes: which exact image bytes run here.
 images:
   - name: ghcr.io/kamahoro123/rssb-pilot-app/frontend
-    digest: sha256:1683f695d8aad54a0657a29b0f40791ee5ecb63c6d564fad453052cf79c4af3e
+    digest: sha256:2ee31bbc76f81348563a7fab974484cfcda898045c95cd741b2a0d84f1f00578
 
 patches:
   - target: { kind: Ingress, name: rssb-pilot-frontend }
